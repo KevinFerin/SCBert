@@ -8,7 +8,7 @@ Sentence Clustering with BERT project which aim to use state-of-the-art BERT mod
 
 ```
 #How to transform raw french texts into vectors using BERT model. 
-from SCB.SCB import Vectorizer
+from SCBert.SCBert import Vectorizer
 
 vectorizer = Vectorizer("flaubert")
 text_vectors = vectorizer.vectorize(data)
@@ -17,7 +17,7 @@ text_vectors = vectorizer.vectorize(data)
 - **Explore the embedded space :**
 ```
 #How to explore the relation in your data. 
-from SCB.SCB import EmbeddingExplorer
+from SCBert.SCBert import EmbeddingExplorer
 
 ee = EmbeddingExplorer(data,text_vectors)
 labels = ee.cluster(k=3)                     #Cluster with k-means 
@@ -26,6 +26,13 @@ ee.explore(color = labels)                   #Generate a plot with PCA of the em
 ```
 
 ### Installation 
+
+You can either download the zip file or use the Pypi package that you can install with the following command : 
+
+```
+> pip install SCBert
+```
+
 
 If you encounter problems during the installation it may be because of the multi-rake dependy with cld2-cffi. I will try to address this later on. To bypass, just follow the instructions : 
 
