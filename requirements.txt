@@ -1,0 +1,8 @@
+tqdm==4.42.1
+stop_words==2018.7.23
+transformers==2.5.1
+multi_rake==0.0.1
+numpy==1.18.1
+matplotlib==3.1.1
+torch==1.3.1
+scikit_learn==0.22.2.post1

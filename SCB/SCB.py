@@ -314,7 +314,7 @@ class EmbeddingExplorer :
         self.data = data
         self.texts_vectors = np.array([el.tolist() for el in texts_vectors])
         self.labels = [0 for i in range (len(texts_vectors))]
-        self.topics_words = {}
+        self.keywords = {}
 
     def cluster (self, k, cluster_algo="k-means") :
         clf = KMeans(n_clusters=k,
@@ -335,9 +335,9 @@ class EmbeddingExplorer :
               corpus_fr = ' '.join(self.data[self.labels==label])
               keywords = rake.apply(corpus_fr)
               top_words= np.array(keywords[:num_top_words])[:,0]
-              self.topics_words["Cluster {0}".format(label)] = top_words
+              self.keywords["Cluster {0}".format(label)] = top_words
               
-        return self.topics_words
+        return self.keywords
     
     def explore(self, color) :
 
