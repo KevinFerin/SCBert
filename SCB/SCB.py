@@ -348,7 +348,7 @@ class EmbeddingExplorer :
         plt.title("PCA representation of the data after vectoring with BERT", fontsize=15)
         plt.scatter(datapoint[:, 0], datapoint[:, 1], c=color, cmap='Set1' )
         plt.xlabel("PCA 1")
-        plt.ylabel("PCA 1")
+        plt.ylabel("PCA 2")
         plt.show()
         
         
