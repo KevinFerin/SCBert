@@ -24,3 +24,13 @@ labels = ee.cluster(k=3)                     #Cluster with k-means
 ee.extract_keywords()                        #Extract keywords using Rake algorithm, then accessible with ee.keywords
 ee.explore(color = labels)                   #Generate a plot with PCA of the embedded vectors with colors corresponding to the labels 
 ```
+
+### Installation 
+
+If you encounter problems during the installation it may be because of the multi-rake dependy with cld2-cffi. I will try to address this later on. To bypass, just follow the instructions : 
+
+```
+> export CFLAGS="-Wno-narrowing"
+> pip install cld2-cffi
+> pip install multi-rake
+```
