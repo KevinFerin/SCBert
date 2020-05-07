@@ -25,6 +25,10 @@ ee.extract_keywords()                        #Extract keywords using Rake algori
 ee.explore(color = labels)                   #Generate a plot with PCA of the embedded vectors with colors corresponding to the labels 
 ```
 
+### Built-in example
+
+There is a built-in example that you can find in the example folder. It comes with it's own data which is the CLS-fr composed of Amazon reviews from different sources (DVD, CD, Livres)
+
 ### Installation 
 
 You can either download the zip file or use the Pypi package that you can install with the following command : 
