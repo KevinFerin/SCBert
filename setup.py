@@ -19,7 +19,7 @@ with open('requirements.txt',encoding='utf-8') as f:
 
 setuptools.setup(
     name="SCBert", 
-    version="0.0.1",
+    version="0.0.2a",
     author="Kevin Ferin",
     author_email="siktime92@gmail.com",
     description="A small package to do Sentence Clustering with BERT (SCBert)",
@@ -29,7 +29,7 @@ setuptools.setup(
     include_package_data=True,
     keywords=['sentence clustering', 'bert', 'keyword extraction',
               'sentence embedding', 'neural networks', 'flaubert', 'camembert'],
-    packages=setuptools.find_packages(),
+    packages=['SCBert'],
     install_requires=requirements,
     classifiers=[
         "Programming Language :: Python :: 3",
