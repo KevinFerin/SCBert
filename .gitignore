@@ -1,0 +1,6 @@
+__pycache__
+SCBert.egg-info
+.git
+build/
+dist/
+SCBert/__pycache__
