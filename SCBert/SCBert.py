@@ -350,5 +350,3 @@ class EmbeddingExplorer :
         plt.xlabel("PCA 1")
         plt.ylabel("PCA 2")
         plt.show()
-        
-        

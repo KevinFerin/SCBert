@@ -19,13 +19,13 @@ with open('requirements.txt',encoding='utf-8') as f:
 
 setuptools.setup(
     name="SCBert", 
-    version="0.0.2a",
+    version="0.0.3",
     author="Kevin Ferin",
     author_email="siktime92@gmail.com",
     description="A small package to do Sentence Clustering with BERT (SCBert)",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/KevinFerin/SCB",
+    url="https://github.com/KevinFerin/SCBert",
     include_package_data=True,
     keywords=['sentence clustering', 'bert', 'keyword extraction',
               'sentence embedding', 'neural networks', 'flaubert', 'camembert'],
