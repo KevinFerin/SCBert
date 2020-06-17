@@ -12,36 +12,56 @@ from transformers import FlaubertModel,FlaubertTokenizer, FlaubertConfig
 from transformers import CamembertModel,CamembertTokenizer, CamembertConfig
 import numpy as np 
 from tqdm import tqdm
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, MiniBatchKMeans, AgglomerativeClustering, DBSCAN, SpectralClustering
+from gensim.models.coherencemodel import CoherenceModel
+from gensim.corpora import Dictionary
 from stop_words import get_stop_words
 from multi_rake import Rake
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+from string import punctuation
 
-MODELS = {"flaubert" : {
+MODELS = {"flaubert_base" : {
                   "model" : FlaubertModel,
                   "tokenizer" : FlaubertTokenizer,
                   "config" : FlaubertConfig, 
+                  "nb_layer" : 12,
                   "pad_id" : 2,
                   "model_name" : 'flaubert-base-uncased'},
+          "flaubert_large" : {
+                  "model" : FlaubertModel,
+                  "tokenizer" : FlaubertTokenizer,
+                  "config" : FlaubertConfig, 
+                  "nb_layer" : 24,
+                  "pad_id" : 2,
+                  "model_name" : 'flaubert-large-cased'},
+          "flaubert_small" : {
+                  "model" : FlaubertModel,
+                  "tokenizer" : FlaubertTokenizer,
+                  "config" : FlaubertConfig, 
+                  "nb_layer" : 6,
+                  "pad_id" : 2,
+                  "model_name" : 'flaubert-small-cased'},
           "camembert" : {
                   "model" : CamembertModel,
                   "tokenizer" : CamembertTokenizer,
                   "config" : CamembertConfig, 
+                  "nb_layer" : 12,
                   "pad_id" : 1,
                   "model_name" : 'camembert-base'}}
 
 class Vectorizer :
         
-        def __init__(self, model_name = "flaubert") :
+        def __init__(self, model_name = "flaubert_base") :
             """
             Constructor of the vectorizer object used to transform your texts into vectors using french BERT models. 
 
             Parameters
             ----------
             model_name : string, optional
-                Corresponds to the model you want to use to tokenize and vectorize your data. Only CamemBERT and Flaubert small for now. 
-                DESCRIPTION. The default is "flaubert".
+                Corresponds to the model you want to use to tokenize and vectorize your data. Only CamemBERT and Flaubert small, base and large for now. 
+                DESCRIPTION. The default is "flaubert_base".
                 
             MAX_LEN : int, optional
                 Corresponds to the max number of word to take into account during tokenizing. If a text is 350 words long and 
@@ -54,6 +74,7 @@ class Vectorizer :
             self.model = self.model_dict["model"].from_pretrained(self.model_dict["model_name"],  output_hidden_states=True)
             self.tokenizer = self.model_dict["tokenizer"].from_pretrained(self.model_dict["model_name"])
             self.pad_id = self.model_dict["pad_id"]
+            self.nb_layer = self.model_dict["nb_layer"]
 
         
         
@@ -163,6 +184,9 @@ class Vectorizer :
             for ndx in range(0, l, n):
                 yield iterable[ndx:min(ndx + n, l)]
                 
+        def __test():
+            return 
+                
         def forward_and_pool (self, input_ids_tensor, masks_tensor, sentence_pooling_method="average", word_pooling_method="average", layers = 11, batch_size=50, path_to_save=None) :
             """
             This function execute the forward pass of the input data into the BERT model and create a unique tensor for each input according to the stated pooling methods. 
@@ -220,14 +244,14 @@ class Vectorizer :
                     layer_list = True
                     for el in layers : 
                         if (type(el) != int) :
-                            raise TypeError('layers must be a int between 1 and 12 or a list of integers between 1 and 12')
-                        elif (el>12 or el<1) :
-                            raise ValueError('layers must be a int between 1 and 12 or a list of integers between 1 and 12')
+                            raise TypeError('layers must be a int between 1 and nb_layer or a list of integers between 1 and nb_layer')
+                        elif (el>self.nb_layer or el<1) :
+                            raise ValueError('layers must be a int between 1 and nb_layer or a list of integers between 1 and nb_layer')
                 else :
-                    raise TypeError('layers must be a int between 1 and 12 or alist of integers between 1 and 12')
+                    raise TypeError('layers must be a int between 1 and nb_layer or a list of integers between 1 and nb_layer')
             else :
-                if (layers>12 or layers<1) :
-                    raise ValueError('layers must be a int between 1 and 12 or a list of integers between 1 and 12')
+                if (layers>self.nb_layer or layers<1) :
+                    raise ValueError('layers must be a int between 1 and nb_layer or a list of integers between 1 and nb_layer')
             
             texts_vectors = []
             N = len(input_ids_tensor)
@@ -255,19 +279,19 @@ class Vectorizer :
                                     eos_pos = 0
                                 else :
                                     eos_pos = int((input_ids_tensor[idx] == self.pad_id).nonzero()[0])
-                                pooled_vectors = self.__sentence_pooling(words_vector[idx-counter][:eos_pos-1][1:], sentence_pooling_method) #Just no to take into account BOS and EOS 
-                                for i, sentence in enumerate(pooled_vectors) :
-                                    texts_vectors.append(pooled_vectors[i])
+                                pooled_vector = self.__sentence_pooling(words_vector[idx-counter][:eos_pos-1][1:], sentence_pooling_method) #Just no to take into account BOS and EOS 
+                                texts_vectors.append(pooled_vector)
                     counter += batch_size
                     pbar.update(np.round(100*len(b)/N,2))
             
             if path_to_save != None : 
-              torch.save(texts_vectors, path_to_save+"text_vectors")
+              torch.save(texts_vectors, path_to_save+"text_vectors.pt")
             
             return texts_vectors
+        
 
 
-        def vectorize (self, data, MAX_LEN = 256, sentence_pooling_method="average", word_pooling_method="average", layers = 11, batch_size=50, path_to_save=None) :
+        def vectorize (self, data, MAX_LEN = 256,sentence_pooling_method="average", word_pooling_method="average", layers = 11, batch_size=50, path_to_save=None) :
             """
             Transform the input raw data into tensors according to the selected models and the pooling methods. 
             
@@ -305,31 +329,55 @@ class Vectorizer :
             """
             tokenized_texts, input_ids_tensor, masks_tensor = self.tokenize(data,MAX_LEN)
             texts_vectors = self.forward_and_pool(input_ids_tensor,masks_tensor,sentence_pooling_method,word_pooling_method,layers,batch_size,path_to_save)
-            
+
             return texts_vectors
         
 class EmbeddingExplorer :
     
     def __init__(self,data, texts_vectors) :
         self.data = data
-        self.texts_vectors = np.array([el.tolist() for el in texts_vectors])
+        if type(texts_vectors) == str : 
+            self.texts_vectors = np.array([el.tolist() for el in torch.load(texts_vectors)])
+        else : 
+            self.texts_vectors = np.array([el.tolist() for el in texts_vectors])
         self.labels = [0 for i in range (len(texts_vectors))]
         self.keywords = {}
 
     def cluster (self, k, cluster_algo="k-means") :
-        clf = KMeans(n_clusters=k,
-              max_iter=50,
-              init='k-means++',
-              n_init=4)
-        self.labels = clf.fit_predict(self.texts_vectors)
-
+        if cluster_algo=="k-means" :
+            clf = KMeans(n_clusters=k,
+                  max_iter=50,
+                  init='k-means++',
+                  n_init=4)
+            self.labels = clf.fit_predict(self.texts_vectors)
+            
+        elif cluster_algo=="quick_k-means" :
+            clf = MiniBatchKMeans(n_clusters=k,
+                  max_iter=50,
+                  init='k-means++',
+                  n_init=4)
+            self.labels = clf.fit_predict(self.texts_vectors)
+        
+        elif cluster_algo=="dbscan" :
+            clf = DBSCAN()
+            self.labels = clf.fit_predict(self.texts_vectors)
+            
+        elif cluster_algo=="agglomerative" :
+            clf = AgglomerativeClustering(n_clusters=k)
+            self.labels = clf.fit_predict(self.texts_vectors)
+            
+        elif cluster_algo=="spectral":
+            clf = SpectralClustering(n_clusters=k, assign_labels="discretize")
+            self.labels = clf.fit_predict(self.texts_vectors)
+            
         return self.labels
     
-    def extract_keywords(self, num_top_words=10) :
+    
+    def extract_keywords(self, max_words = 1, min_freq=5, num_top_words=10) :
 
-        stop_words = get_stop_words('fr')  
+        stop_words = get_stop_words('fr')
         
-        rake = Rake(max_words=1, min_freq = 3, language_code ="fr", stopwords = stop_words)
+        rake = Rake(max_words=max_words, min_freq = min_freq, language_code ="fr", stopwords = stop_words)
         
         for i, label in enumerate(np.unique(self.labels)):
               corpus_fr = ' '.join(self.data[self.labels==label])
@@ -339,14 +387,91 @@ class EmbeddingExplorer :
               
         return self.keywords
     
-    def explore(self, color) :
-
-        pca = PCA(n_components=2).fit(self.texts_vectors)
-        datapoint = pca.transform(self.texts_vectors)
+    def compute_coherence(self, vectorizer, keywords=[]) :
+        if not isinstance(vectorizer, Vectorizer) :
+            raise TypeError("You should provide the same Vectorizer object you used to compute the vectors")
+        tokenized_texts = np.array([vectorizer.tokenizer.tokenize(text) for text in self.data])
+        coherences =[]
+        if keywords == [] :
+            if self.keywords == {} :
+                raise ValueError('There is no keywords extracted or passed in the function')
+            else : 
+                for cluster, top_words in enumerate(list(self.keywords.values())) :
+                    cm = CoherenceModel(topics=top_words, texts=tokenized_texts, dictionary=Dictionary(tokenized_texts) , coherence="c_v")
+                    coherences.append(cm.get_coherence())
+                    print("Cluster {} with keywords : \n {} \n has a coherence of {} \n".format(cluster, top_words, cm.get_coherence()))
+                return coherences
+        else : 
+            for cluster, top_words in enumerate(keywords) :
+                cm = CoherenceModel(topics=top_words, texts=tokenized_texts, dictionary=Dictionary(tokenized_texts) , coherence="c_v")
+                coherences.append(cm.get_coherence())
+                print("Cluster {} with keywords : \n {} \n has a coherence of {} \n".format(cluster, top_words, cm.get_coherence()))
+            return coherences
+            
+    def extract_keywords_and_coherence(self, vectorizer, keywords = [], max_words =1, min_freq=5, num_top_words=10) :
+        if not isinstance(vectorizer, Vectorizer) :
+            raise TypeError("You should provide the same Vectorizer object you used to compute the vectors")
+        keywords = self.extract_keywords(max_words =1, min_freq=5, num_top_words=10)
         
-        plt.figure(figsize=(10, 10))
-        plt.title("PCA representation of the data after vectoring with BERT", fontsize=15)
-        plt.scatter(datapoint[:, 0], datapoint[:, 1], c=color, cmap='Set1' )
-        plt.xlabel("PCA 1")
-        plt.ylabel("PCA 2")
+        return keywords, self.compute_coherence(vectorizer, keywords)
+    
+    # def __custom_cls_metric(self) :
+        
+    #     s = 0
+    #     p1,p2,p3=[],[],[]
+    #     for i in range (3):
+    #         s+=round(sum(self.labels==i)/len(self.labels),3)
+    #         p1.append(sum(self.labels[:2000] == i)/2000)
+    #         p2.append(sum(self.labels[2000:4000] == i)/2000)
+    #         p3.append(sum(self.labels[4000:] == i)/2000)
+    #     p = [p1,p2,p3]
+    #     index_to_chose = [0,1,2]
+    #     for i in range (3):
+    #         l=[]
+    #         for j in range (3) :
+    #             if (j in index_to_chose) :
+    #                 l.append(p[i][j])
+    #             else : l.append(0)
+    #         #l = [p[i][j] for j in range (3) if j in index_to_chose]
+    #         s+=max(l)
+    #         index_to_chose.remove(l.index(max(l)))
+    #     return 4-s
+    
+    def explore_cls(self, color_label, projection_method= "PCA") :
+        if projection_method=="PCA" :
+            
+            pca = PCA(n_components=2).fit(self.texts_vectors)
+            datapoint = pca.transform(self.texts_vectors)
+            
+            plt.figure(figsize=(10, 10))
+            plt.title("PCA representation of the cls data after vectoring with BERT", fontsize=15)
+            plt.scatter(datapoint[:, 0], datapoint[:, 1], c=color_label, cmap='Set1' )
+            plt.xlabel("PCA 1")
+            plt.ylabel("PCA 2")
+            plt.show()
+            
+        elif projection_method=="tSNE" :
+            datapoint = TSNE(n_components=2).fit_transform(self.texts_vectors)
+            plt.figure(figsize=(10, 10))
+            plt.title("tSNE representation of the cls data after vectoring with BERT", fontsize=15)
+            plt.scatter(datapoint[:, 0], datapoint[:, 1], c=color_label, cmap='Set1' )
+            plt.xlabel("dim 1")
+            plt.ylabel("dim 2")
+            plt.show()
+            
+        p_1,p_2,p_3=[], [], []
+        for i in range(3) :
+            print("Proportion of cluster {} : {}".format(i,round(sum(self.labels==i)/len(self.labels),3)))
+            p_1.append(sum(self.labels[:2000] == i))
+            p_2.append(sum(self.labels[2000:4000] == i))
+            p_3.append(sum(self.labels[4000:] == i))
+        p = [p_1,p_2,p_3]
+        plt.figure(figsize=(15,15))
+        category = ["DVD", "Musique", "Livres"]
+        for i in range (1,4) :
+            plt.subplot(1,3,i)
+            plt.title("Proportion of each cluster within {}".format(category[i-1]))
+            plt.pie(p[i-1], labels=[0,1,2])
         plt.show()
+        
+        #print("Our custom metric gives us {}. \nCloser to 0 is better".format(self.__custom_cls_metric()))

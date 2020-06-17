@@ -4,3 +4,5 @@ SCBert.egg-info
 build/
 dist/
 SCBert/__pycache__
+fast-multi-rake.py
+.idea/
