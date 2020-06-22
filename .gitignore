@@ -6,3 +6,5 @@ dist/
 SCBert/__pycache__
 fast-multi-rake.py
 .idea/
+command_update_package.txt
+examples/text_vectors.pt

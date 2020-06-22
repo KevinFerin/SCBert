@@ -27,6 +27,7 @@ MODELS = {"flaubert_base" : {
                   "tokenizer" : FlaubertTokenizer,
                   "config" : FlaubertConfig, 
                   "nb_layer" : 12,
+                  "hidden_length" : 768,
                   "pad_id" : 2,
                   "model_name" : 'flaubert-base-uncased'},
           "flaubert_large" : {
@@ -34,6 +35,7 @@ MODELS = {"flaubert_base" : {
                   "tokenizer" : FlaubertTokenizer,
                   "config" : FlaubertConfig, 
                   "nb_layer" : 24,
+                  "hidden_length" : 1024,
                   "pad_id" : 2,
                   "model_name" : 'flaubert-large-cased'},
           "flaubert_small" : {
@@ -41,6 +43,7 @@ MODELS = {"flaubert_base" : {
                   "tokenizer" : FlaubertTokenizer,
                   "config" : FlaubertConfig, 
                   "nb_layer" : 6,
+                  "hidden_length" : 512,
                   "pad_id" : 2,
                   "model_name" : 'flaubert-small-cased'},
           "camembert" : {
@@ -48,6 +51,7 @@ MODELS = {"flaubert_base" : {
                   "tokenizer" : CamembertTokenizer,
                   "config" : CamembertConfig, 
                   "nb_layer" : 12,
+                  "hidden_length" : 768,
                   "pad_id" : 1,
                   "model_name" : 'camembert-base'}}
 
@@ -63,10 +67,6 @@ class Vectorizer :
                 Corresponds to the model you want to use to tokenize and vectorize your data. Only CamemBERT and Flaubert small, base and large for now. 
                 DESCRIPTION. The default is "flaubert_base".
                 
-            MAX_LEN : int, optional
-                Corresponds to the max number of word to take into account during tokenizing. If a text is 350 words long and 
-                MAX_LEN is 256, the text will be truncated after the 256th word, starting at the beginning of the sentence. 
-                DESCRIPTION. The default is 256.
             ----------
 
             """
@@ -75,7 +75,7 @@ class Vectorizer :
             self.tokenizer = self.model_dict["tokenizer"].from_pretrained(self.model_dict["model_name"])
             self.pad_id = self.model_dict["pad_id"]
             self.nb_layer = self.model_dict["nb_layer"]
-
+            self.hidden_length = self.model_dict["hidden_length"]
         
         
         def tokenize (self, data, MAX_LEN = 256) :
@@ -145,7 +145,7 @@ class Vectorizer :
             
             return pooled_vector
         
-        def __word_pooling (self, encoded_layers_b, layers, idx,  pooling_method) :
+        def __word_pooling (self, encoded_layers_b, layers, idx,  pooling_method, MAX_LEN = 256) :
             """
             Parameters
             ----------
@@ -153,6 +153,11 @@ class Vectorizer :
             
             pooling_method : string
                 average, max or concat.
+                
+            MAX_LEN : int, optional
+                Corresponds to the max number of word to take into account during tokenizing. If a text is 350 words long and 
+                MAX_LEN is 256, the text will be truncated after the 256th word, starting at the beginning of the sentence. 
+                Default: The default is 256.
 
             Returns
             -------
@@ -167,13 +172,13 @@ class Vectorizer :
                     pooled_words = torch.cat((pooled_words, encoded_layers_b[layer][idx]), dim=1)
                     
             if pooling_method.lower() == "average" :
-                pooled_words = torch.tensor([[0. for i in range(768)] for j in range(256)])
+                pooled_words = torch.tensor([[0. for i in range(self.hidden_length)] for j in range(MAX_LEN)])
                 for layer in layers :
                     pooled_words = pooled_words.add(encoded_layers_b[layer][idx])
                 pooled_words = pooled_words/(len(layers))
                 
             elif pooling_method.lower() == "max" :
-                pooled_words = torch.tensor([[-100. for i in range(768)] for j in range(256)])
+                pooled_words = torch.tensor([[-100. for i in range(self.hidden_length)] for j in range(MAX_LEN)])
                 for layer in layers :   
                     pooled_words = torch.max(pooled_words, encoded_layers_b[layer][idx])
             
