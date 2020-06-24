@@ -19,7 +19,7 @@ with open('requirements.txt',encoding='utf-8') as f:
 
 setuptools.setup(
     name="SCBert", 
-    version="0.1.1",
+    version="0.2",
     author="Kevin Ferin",
     author_email="siktime92@gmail.com",
     description="A small package to do Sentence Clustering with BERT (SCBert)",
