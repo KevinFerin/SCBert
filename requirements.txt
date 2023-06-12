@@ -1,6 +1,6 @@
 tqdm==4.42.1
 stop_words==2018.7.23
-transformers==2.5.1
+transformers==4.30.0
 multi_rake==0.0.1
 numpy==1.18.1
 matplotlib==3.1.1
